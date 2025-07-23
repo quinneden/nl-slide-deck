@@ -1,0 +1,14 @@
+[
+  {
+    "label": "pnpm build",
+    "command": "pnpm",
+    "args": ["build"]
+  },
+  {
+    "label": "pnpm dev",
+    "command": "pnpm",
+    "args": ["dev"],
+    "use_new_terminal": true,
+    "reveal": "never"
+  }
+]
