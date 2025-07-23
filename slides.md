@@ -316,7 +316,7 @@ Finally, this project demonstrated Nix's unique strengths in system integration 
 transition: fade-out
 ---
 
-# Slide 8: Why Me?
+# Why Me?
 
 <v-clicks>
 
