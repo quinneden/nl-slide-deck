@@ -1,0 +1,16 @@
+/* Target all code blocks including magic-move */
+.slidev-code,
+.shiki-magic-move,
+pre[class*="language-"] {
+  max-width: 450px;
+  overflow: auto;
+  display: block;
+  background: var(--slidev-code-background, #1e1e1e);
+  padding: 1rem;
+  border-radius: 0.375rem;
+}
+
+/* Ensure the container doesn't interfere */
+.shiki-magic-move-container {
+  max-width: 450px;
+}

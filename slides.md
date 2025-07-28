@@ -27,7 +27,7 @@ Quinn Edenfield
 </div>
 
 <!--
-Hi everyone, my name is Quinn Edenfield. Thank you for this opportunity. Today, I'm going to walk you through a project that showcases my approach to solving complex system integration and automation challenges. We'll go from a Git repository to a fully automated, one-command installer that deploys a custom NixOS environment onto bare-metal Apple Silicon hardware.
+Hi everyone, my name is Quinn Edenfield. Thank you for giving me this opportunity to walk you through a project of mine, `nixos-asahi-package`, and showcase my approach to solving complex system integration problems and automation challenges. We'll cover NixOS disk image generation, package transformation, and CI/CD automation to create a one-command OS install process for deploying NixOS onto Apple Silicon Macs.
 -->
 
 ---
@@ -36,12 +36,12 @@ transition: fade-out
 
 # The Problem
 
-Installing NixOS on an Apple Silicon Mac was a complex, expert-only process involving manual partitioning and hours of debugging.
+Before `nixos-asahi-package`, installing NixOS on an Apple Silicon Mac was a complex process involving manual partitioning and hours of debugging.
 
 
 <div v-click="1">
 
-**The Core Technical Challenge:** How do you programmatically build a bootable, custom NixOS disk image and package it for a third-party installer (`asahi-installer`) that expects a specific package format, all within a fully automated CI/CD pipeline?
+**The Core Technical Challenge:** How to programmatically build a bootable, custom NixOS disk image and package it for a third-party installer (`asahi-installer`) so that it is ready to be installed onto bare metal, all within a fully automated CI/CD pipeline?
 
 </div>
 
@@ -49,70 +49,223 @@ Installing NixOS on an Apple Silicon Mac was a complex, expert-only process invo
 
 This breaks down into three sub-problems:
 
+<br>
 </div>
 
-<div v-click="3">
+<div v-click="3" class="grid grid-cols-3 gap-4">
 
 <div v-motion
   :initial="{ opacity: 0 }"
-  :click-3="{ opacity: 1, transition: { delay: 200, duration: 800 } }">
+  :click-3="{ opacity: 1, transition: { delay: 200, duration: 800 } }"
+  class="col-span-1">
 
-1. **Declarative Image Generation:** How to create a raw, bootable `aarch64-linux` disk image in a reproducible way?
-
-</div>
-
-<div v-motion
-  :initial="{ opacity: 0 }"
-  :click-3="{ opacity: 1, transition: { delay: 1000, duration: 800 } }">
-
-2. **Format Transformation:** How to deconstruct this image into the specific file/directory structure required by the installer?
+1. **Declarative Image Generation:**<br>
+How to create raw, bootable `aarch64-linux` NixOS disk images for multiple filesystem variants declaratively?
 
 </div>
 
 <div v-motion
   :initial="{ opacity: 0 }"
-  :click-3="{ opacity: 1, transition: { delay: 1800, duration: 800 } }">
+  :click-3="{ opacity: 1, transition: { delay: 1000, duration: 800 } }"
+  class="col-span-1">
 
-3. **Automated Distribution:** How to automate the entire build, transformation, and release process to a public CDN on every version bump?
+2. **Format Transformation:**<br>
+How to deconstruct this image into the specific image/directory structure required by the installer?
+
+</div>
+
+<div v-motion
+  :initial="{ opacity: 0 }"
+  :click-3="{ opacity: 1, transition: { delay: 1800, duration: 800 } }"
+  class="col-span-1">
+
+3. **Automated Distribution:**<br>
+How to automate the entire build, transformation, and release process to a public CDN on every version bump?
 
 </div>
 
 </div>
 
 <!--
-The goal was to make NixOS on Apple Silicon more accessible. But the technical hurdle was significant. I had two disconnected worlds: the world of NixOS, which is great at producing declarative, reproducible system configurations, and the world of the Asahi Installer, which is the only tool capable of safely partitioning a Mac's internal drive and blessing a new OS.
+The goal was to make NixOS on Apple Silicon more accessible. But the technical hurdle was significant. I had two disconnected worlds: the world of Nix & NixOS, which is great at producing declarative, reproducible system configurations, and the Asahi Installer, which is the only tool available that can safely partition a Mac's internal drive and bless a new Linux OS.
 
-The installer doesn't just take an ISO or a disk image. It requires a specific set of files: a zipped archive of the root filesystem, a separate directory for the boot partition (ESP), and a JSON manifest file that describes the OS. My task was to bridge these two worlds and automate the entire process.
+The installer doesn't accept a standard disk image as it's payload. It requires a specific set of files: a zipped archive containing a disk image of a root partition, and the contents of an ESP partition extracted into a directory, and a JSON manifest file that describes the content and structure of the installer payload. My goal was to bridge these two worlds and automate the entire process.
 -->
 
 ---
 transition: fade-out
+layout: two-cols-header
+layoutClass: gap-4
+clicks: 5
 ---
 
 # The Solution
 
-I created a pipeline that transforms source Nix code into a NixOS package that users can install onto Apple Silicon hardware with minimal manual intervention.
+A pipeline to transform source code into a NixOS package and hosted installer to facilitate installation onto Apple Silicon hardware with minimal manual intervention.
 
-<v-clicks>
+::left::
+
+<div class="text-xs">
 
 1. **`nix run .#create-release`:** A Nix Flake app that pushes a version tag to the `main` branch.
 
-2. **GitHub Actions:** That push triggers a CI/CD workflow.
+<div v-click="1" class="fade-in">
 
-3. **Nix Build:** The workflow uses `nix-fast-build` to concurrently evaluate, then build both NixOS package variants.
+2. **GitHub Actions:** That push triggers a CI/CD workflow which uses `nix-fast-build` to evaluate and build the package variants concurrently.
 
-4. **Package & Transform:** Once the images are built, the next step deconstructs the `.img` file into a `.zip` archive and a JSON manifest.
+</div>
 
-5.  **Deploy:** The workflow uploads the final assets to a Cloudflare R2 bucket, which are then served, along with the installer bootstrap scripts, via `https://cdn.nixos-asahi.qeden.dev`.
+<div v-click="2" class="fade-in">
+
+3. **Nix Build:** The build process begins with creating the NixOS disk images, one using `btrfs` and the other using `ext4`.
+
+</div>
+
+<div v-click="3" class="fade-in">
+
+4. **Package & Transform:** Once the images are built, the next step deconstructs the `.img` files into `.zip` archives and generates JSON manifests for the installer.
+
+</div>
+
+<div v-click="4" class="fade-in">
+
+5.  **Deploy:** Then, a python script uploads the final artifacts to a Cloudflare R2 bucket, which are then served, along with the installer bootstrap scripts, via `https://cdn.nixos-asahi.qeden.dev`.
+
+</div>
+
+<div v-click="5" class="fade-in">
 
 6.  **User Install:** The user runs `curl -L https://nixos-asahi.qeden.dev/install | sh`, which executes the bootstrap script, subsequently fetching the installer and the metadata from the CDN to install the OS.
 
-</v-clicks>
+</div>
+
+</div>
+
+::right::
+
+````markdown magic-move {style: 'min-width: 450px; max-width: 450px; overflow: auto; display: block; background: var(--slidev-code-background, #1e1e1e); padding: 0.5rem; border-radius: 0.375rem;'}
+```bash
+#  create-release.sh:
+
+#  ...truncated...
+sed -i "s/commits = [0-9]\+;/commits = $commit_count;/g" version.nix
+sed -i "s/released = false/released = true/g" version.nix
+
+git commit -am "release: v$version"
+git tag -a "v$version" -m "release: v$version"
+git tag -fa "latest" -m "release: v$version"
+
+sed -i "s/released = true;/released = false;/g" version.nix
+git commit -am "chore(version.nix): reset released flag"
+
+echo "Release was prepared successfully!"
+echo "To push the release, run the following command:"
+echo
+echo "  git push origin main v$version && git push --force origin latest"
+```
+
+```yaml
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v[0-9]*.[0-9]*.[0-9]*"
+#  ...truncated...
+    steps:
+    #  ...truncated...
+      - name: Build metapackage
+        run: |
+          nix-fast-build \
+            --eval-workers 24 \
+            --eval-max-memory-size 8192 \
+            --skip-cached \
+            --no-nom
+```
+
+```nix
+copyStagingRoot =
+  if fsType == "btrfs" then
+    # ... truncated ...
+  else 
+    # ... truncated ...
+
+buildImageStageOne = pkgs.vmTools.runInLinuxVM (
+    pkgs.runCommand "${name}-stage-one" (
+      # ... truncated...
+    )
+);
+
+buildImageStageTwo = pkgs.vmTools.runInLinuxVM (
+    pkgs.runCommand name (
+    #  ... truncated...
+    )
+);
+```
+
+```nix
+#  ...truncated...
+buildPhase = ''
+  #  ...
+  eval "$(fdisk -Lnever -lu -b 512 "$diskImage" \
+    | awk "/^$diskImage/ { printf \"dd if=$diskImage of=%s skip=%s count=%s bs=512\\n\", \$1, \$2, \$4 }")"
+
+  mkdir -p package/esp
+  7z x -o"package/esp" "''${diskImage}1"
+  mv "''${diskImage}2" package/root.img
+  pushd package/ > /dev/null
+  rm -rf esp/EFI/nixos/.extra-files
+  echo -n 'creating compressed archive:'
+  7z a -tzip -r -mx1 -bso0 ../"$pkgZip" ./.
+  popd > /dev/null
+  jq -r <<< ${lib.escapeShellArg installerData} > "$installerData"
+  #  ...
+'';
+#  ...truncated...
+```
+
+```python
+#  ...truncated...
+def upload_to_r2(file: Path, content_type: str):
+    s3_client = boto3.client(
+    #  ...truncated...
+    with open(file, "rb") as file_bytes:
+        s3_client.upload_fileobj(
+            file_bytes,
+            Bucket=os.getenv("BUCKET_NAME"),
+            Callback=progress.update,
+            ExtraArgs={"ContentType": content_type},
+            Key=object_key,
+        )
+```
+
+```bash
+#  ...truncated...
+curl --no-progress-meter -L -o "$PKG" "$INSTALLER_BASE/$PKG"
+if ! curl --no-progress-meter -L -O "$INSTALLER_DATA"; then
+  #  ...truncated...
+fi
+
+echo "  Extracting..."
+
+tar xf "$PKG"
+
+echo "  Initializing..."
+
+if [ "$USER" != "root" ]; then
+  echo "The installer needs to run as root."
+  echo "Please enter your sudo password if prompted."
+  exec caffeinate -dis sudo -E ./install.sh "$@"
+else
+  exec caffeinate -dis ./install.sh "$@"
+fi
+```
+
+````
 
 <!--
 This is the high-level architecture of the project. It's a classic CI/CD pipeline, but the complexity is hidden in steps 3 and 4, which I'll go into later.
 
-I adapted the logic from the similar image-builder script in the nixpkgs repository, with heavy modifications to support both ext4 and btrfs. I fully wrote the packaging logic, Nix functions in `lib`, and configured the GitHub Actions workflow and Python scripts for the final deployment to the cloud.
+I adapted logic from a similar image-builder script in the nixpkgs repository, with heavy modifications to support both ext4 and btrfs. I wrote the packaging logic and Nix functions to generate installer data from scratch, and configured the GitHub Actions workflow and Python script for the final deployment to the cloud.
 
 Let's zoom in on the most challenging part: building and packaging the image.
 -->
@@ -120,12 +273,14 @@ Let's zoom in on the most challenging part: building and packaging the image.
 ---
 transition: fade-out
 layout: two-cols
-layoutClass: gap-16
+layoutClass: gap-4
 ---
 
 # Building
 
 Building the `btrfs` and `ext4` Image Variants
+
+<div class="text-sm">
 
 <v-clicks>
 
@@ -137,11 +292,13 @@ This approach guarantees that the build is reproducible and independent of the h
 
 </v-clicks>
 
+</div>
+
 ::right::
 
 <div v-click="2" class="fade-in">
 
-```nix
+```nix {style: 'max-width: 450px; overflow: auto; display: block; background: var(--slidev-code-background, #1e1e1e); padding: 0.5rem; border-radius: 0.375rem;'}
 prepareStagingRoot = ''
   # Use nixos-install to populate a directory with the full NixOS closure
   # This allows us to later copy it into the disk image and set file
@@ -152,15 +309,15 @@ prepareStagingRoot = ''
     --no-bootloader \
     --system ${config.system.build.toplevel}
 '';
-# ... truncated ...
+#  ... truncated ...
 buildImageStageOne = pkgs.vmTools.runInLinuxVM (
   pkgs.runCommand "stage-one" { ... } ''
-    # Inside the VM, we have a block device (/dev/vda)
+    #  Inside the VM, we have a block device (/dev/vda)
     mkfs.btrfs -L nixos /dev/vda2
-    # Mount and create btrfs subvolumes for /, /nix, /home
+    #  Mount and create btrfs subvolumes for /, /nix, /home
     btrfs subvolume create /mnt/@
-    # ... truncated ...
-    # Copy the prepared rootfs into the newly formatted filesystem
+    #  ... truncated ...
+    #  Copy the prepared rootfs into the newly formatted filesystem
     cptofs -p -P 2 -t btrfs -i $diskImage $root/* /@
   '';
 );
@@ -175,11 +332,11 @@ buildImageStageOne = pkgs.vmTools.runInLinuxVM (
 </style>
 
 <!--
-Here's where I apply first principles. The problem: I need to create a bootable disk image with a specific filesystem layout, but I can't just run `mkfs.btrfs` or `mkfs.ext4` on the host machine. The Nix build environment is sandboxed and doesn't allow mounting filesystems or accessing block devices directly. The tooling for `ext4` allows for specifying the offset of the partition, but `btrfs` doesn't. This means we need access to virtual block devices to mount the partitions in order to create the filesystems.
+Here's where I apply first principles. The problem: I need to create a bootable disk image with a specific filesystem layout, but I can't just run `mkfs.btrfs` or `mkfs.ext4` on the host machine. The Nix build environment is sandboxed and doesn't allow mounting filesystems or accessing block devices directly, not to mention I was also developing on a Mac. However, the `mkfs.btrfs` tool doesn't allow specifying the offset of the partition, like `mkfs.ext4` does. This means we need access to virtual block devices to mount the partitions in order to create the filesystems.
 
-First, outside the VM, I use `nixos-install` to populate a directory as a 'staging root' of the final operating system. This way we only need to run the command once for both image variants, and it allows us to set file modification times deterministically. This directory contains the full NixOS closure, which we will later copy into the disk image.
+First, outside the VM, we use `nixos-install` to populate a directory as a 'staging root' of the NixOS system. This way we only need to run the command once for both image variants, and it allows us to set file modification times deterministically when copied into the image later on.
 
-Second, a QEMU virtual machine is booted. Nix handles the magic of spinning up the VM and passing in the staging root and disk image. Inside this hermetic Linux environment, the filesystems are created, then the staging root is copied into the newly formatted root filesystems.
+Second, a QEMU virtual machine is booted. Nix handles spinning up the VM and passing in the staging root and disk image. Inside this hermetic Linux environment, the filesystems are created. Then, after leaving the VM, the staging root is copied into the newly formatted root filesystems. This uses cptofs to deterministically copy to staging root into to root filesystem on the image. Then, a second VM is booted which mounts the two partitions and runs `nixos-enter` and `switch-to-configuration` to activate the NixOS installation.
 -->
 
 ---
@@ -200,7 +357,7 @@ The `asahi-installer` doesn't accept a disk image. It needs a `.zip` of the root
 
 **Solution:** A Nix derivation that uses low-level command-line tools to perform the transformation.
 
-This derivation is a micro-factory: it takes in a disk image and outputs a zip file and a JSON file, using a precise chain of standard tools to perform a highly specific transformation.
+This derivation is a micro-factory: it takes in a disk image and outputs a zip file and a JSON file using a precise chain of standard tools to perform a highly specific transformation.
 
 </v-clicks>
 
@@ -216,23 +373,22 @@ stdenv.mkDerivation {
   buildPhase = ''
     diskImage="${image.name}.img"
 
-    # Use fdisk + awk to parse the partition table of the .img file
-    # This extracts the start/end sectors of each partition.
     eval "$(
-      fdisk -Lnever -lu -b 512 "$diskImage" |
-      awk "/^$diskImage/ { printf \"dd if=$diskImage of=%s skip=%s count=%s bs=512\\n\", \$1, \$2, \$4 }"
+      fdisk -Lnever -lu -b 512 "$diskImage" \
+        | awk "/^$diskImage/ 
+          {
+            printf \"dd if=$diskImage of=%s skip=%s
+            count=%s bs=512\\n\", \$1, \$2, \$4 
+          }"
     )"
 
-    # This created two new image: ESP and rootfs
-    # Now, extract the ESP contents and rename the rootfs partition.
     7z x -o"package/esp" "''${diskImage}1"
     mv "''${diskImage}2" package/root.img
 
-    # 3. Create the final zip archive from the `package` directory.
     7z a -tzip -r ../"$pkgZip" ./package
 
-    # 4. Generate the JSON manifest using data passed from the image build.
-    jq -r <<< ${lib.escapeShellArg installerData} > "$installerData"
+    jq -r <<< ${lib.escapeShellArg installerData} \
+      > "$installerData"
   '';
   # ... truncated ...
 }
@@ -247,16 +403,122 @@ stdenv.mkDerivation {
 </style>
 
 <!--
-So we have our `nixos.img` file. But we can't ship it. It has to be torn apart again, but in a very controlled and reproducible way.
+So we have the `nixos.img` file, but it's not ready for the Asahi Installer yet. It has to be torn apart again, but in a very controlled way.
 
-Inside another Nix derivation, a sequence of low-level tools is used to do this. Nix build environments are sandboxed and don't allow mounting.
+Inside another Nix derivation, a sequence of low-level tools is used to do this. Since Nix build environments are sandboxed and don't allow mounting images, we use `fdisk` and `awk` to parse the image's partition table and dynamically generated `dd` commands to carve out each partition into its own separate file.
 
-First, it uses `fdisk` and `awk` to parse the image's partition table. The `awk` script dynamically generates `dd` commands to carve out each partition into its own separate file.
+Next, we use `7zip` to extract the contents of the ESP partition image into a directory. For the root partition image, the file is renamed to `root.img` as required by the installer.
 
-Next, it uses `7zip` to extract the contents of the boot partition file. For the root filesystem partition, the file is renamed to `root.img` as required by the installer.
-
-Finally, it zips up the results and used `jq` to generate the final JSON manifest (which is generated by more Nix logic in `lib/generate-installer-data.nix`). Since this is a Nix derivation, the entire chain is deterministic.
+Finally, `7zip` creates a compressed archive containing the `esp` and `root.img`, and `jq` pretty-prints the installer data (which is generated by a nix function in `lib/generate-installer-data.nix`). This two artifacts are the final output of the build process.
 -->
+
+---
+transition: fade-out
+layoutClass: gap-16
+layout: two-cols
+clicks: 3
+---
+
+# CI/CD
+
+The GitHub Actions Workflow that automates the package builds, artifact uploads, and release.
+
+<div class="text-sm">
+
+The workflow triggers on manual dispatch or semantic version tags, running on a self hosted `aarch64-linux` runner.
+
+<div v-click="1" class="fade-in">
+
+Use `nix-fast-build` with aggressive parallelization to handle evaluating the multiple package variants concurrently. Cachix integration provides binary caching, configured to push to the project's associated cache.
+
+</div>
+
+<div v-click="2" class="fade-in">
+
+The workflow uploads both installer data JSON and compressed package archives as release artifacts, then synchronizes them to a Cloudflare R2 storage bucket. This dual strategy ensures reliability while providing the low-latency access required for the installer's download operations.
+
+</div>
+
+</div>
+
+::right::
+
+#### `build-and-release.yml`:
+
+````md magic-move
+```yaml
+name: Build package and release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v[0-9]*.[0-9]*.[0-9]*"
+
+jobs:
+  build:
+    runs-on:
+      labels: oc-runner
+
+    permissions:
+      id-token: "write"
+      contents: "write"
+```
+
+```yaml
+steps:
+  - uses: actions/checkout@v4.2.2
+
+  - uses: cachix/cachix-action@v16
+    with:
+      name: nixos-asahi
+      authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
+
+  - name: Build metapackage
+    run: |
+      nix-fast-build \
+        --eval-workers 24 \
+        --eval-max-memory-size 8192 \
+        --skip-cached \
+        --no-nom
+```
+
+```yaml
+steps:
+  # ...
+  - name: Release
+    uses: softprops/action-gh-release@v2.2.2
+    if: startsWith(github.ref, 'refs/tags/')
+    with:
+      draft: true
+      files: |
+        result-aarch64-linux/installer_data-*.json
+        result-aarch64-linux/nixos-asahi-*.zip
+  
+  - name: Upload to CDN
+    if: startsWith(github.ref, 'refs/tags/')
+    run: |
+      touch ./.env
+      cat > .env <<EOF
+      export ACCESS_KEY_ID=${{ ... }}
+      export BASE_URL="https://cdn.qeden.dev"
+      export BUCKET_NAME="nixos-asahi"
+      export ENDPOINT_URL=${{ ... }}
+      export SECRET_ACCESS_KEY=${{ ... }}
+      EOF
+  
+      nix run .#upload -- ./result-aarch64-linux
+```
+````
+
+<!--
+Now I'll dive deeper into the CI/CD process. This workflow is designed around the resource constraints of building full NixOS disk images. At the time of creation, arm64-linux GitHub-hosted runners were not available - so thankfully I had an Oracle Cloud Instance at my disposal. The `oc-runner` label targets my self-hosted runner. The version tag trigger ensures we only run the workflow for properly tagged versions, which are created using the `create-release` flake app.
+
+The build step uses `nix-fast-build`, a tool that parallelizes Nix attribute evaluation, which dramatically reduces build time for large derivations, or when building multiple derivations. By default, it builds whatever attributes are defined in the `checks` output of the flake; in our case, both package variants. The Cachix integration is configured to push artifacts to a binary cache, so that previously built derivations can be shared across CI runs. Additionally, the `--skip-cached` flag ensures that we don't download any packages which already exist in the binary cache.
+
+Finally we have the release and upload phases. First, the packages built by `nix-fast-build` are uploaded as artifacts for a draft GitHub release, allowing for manual verification before going live. Then, the upload step synchronizes those artifacts to Cloudflare R2 storage. It does this by calling the `upload` app, which runs a python script that uses `boto3` to upload the files through the S3 API. The flake app is configured to read environment variables from the `.env` file, so we recreate it using the repositories secret variables.
+-->
+
 
 ---
 transition: fade-out
