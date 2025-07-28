@@ -19,22 +19,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@v4
 
-      - name: Set up Nix
-        uses: cachix/install-nix-action@v31.5.1
+      - uses: actions/setup-node@v4
         with:
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          node-version: "lts/*"
+
+      - name: Setup @antfu/ni
+        run: npm i -g @antfu/ni
+
+      - name: Install dependencies
+        run: nci
 
       - name: Build
-        run: nix build .#slide-deck
+        run: nr build --base /${{github.event.repository.name}}/
 
       - name: Setup Pages
-        uses: actions/configure-pages@v5.0.0
+        uses: actions/configure-pages@v4
 
-      - uses: actions/upload-pages-artifact@v3.0.1
+      - uses: actions/upload-pages-artifact@v3
         with:
-          path: result/
+          path: dist
 
   deploy:
     environment:
