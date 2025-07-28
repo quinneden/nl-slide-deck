@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+    paths-ignore: [".gitignore", ".envrc", "flake.nix", "flake.lock"]
 
 permissions:
   contents: read
